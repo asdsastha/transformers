@@ -1,0 +1,7 @@
+# tiny-gpt: model, tests, training and the tiny_gpt.ipynb manual.
+# Installed by `setup` (~/aiml/scripts/set_env.sh) in one resolve with the workspace;
+# torch comes from the cu132 index there, so don't pip install this file on its own.
+torch
+pytest
+matplotlib    # loss curves in the notebook (Part 11)
+ipykernel     # runs tiny_gpt.ipynb in the aiml env

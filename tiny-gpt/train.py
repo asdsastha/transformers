@@ -33,8 +33,8 @@ here = Path(__file__).parent
 # versus ~50k for GPT-2's BPE. Simple, but each token carries little meaning, so the model
 # has to learn spelling as well as language.
 text = (here / "data/input.txt").read_text()
-chars = sorted(set(text))
-stoi = {c: i for i, c in enumerate(chars)}  # string -> id (encode)
+vocab = sorted(set(text))
+stoi = {c: i for i, c in enumerate(vocab)}  # string -> id (encode)
 itos = {i: c for c, i in stoi.items()}      # id -> string (decode)
 data = torch.tensor([stoi[c] for c in text], dtype=torch.long)
 
@@ -43,7 +43,7 @@ data = torch.tensor([stoi[c] for c in text], dtype=torch.long)
 n = int(0.9 * len(data))
 splits = {"train": data[:n], "val": data[n:]}
 
-cfg = GPTConfig(vocab_size=len(chars))
+cfg = GPTConfig(vocab_size=len(vocab))
 
 
 def get_batch(split):
@@ -108,7 +108,7 @@ for it in range(args.iters + 1):
 # ---- save + sample ----------------------------------------------------------------------
 # checkpoint keeps the vocab too; Monday's KV-cache work loads it instead of retraining
 (here / "checkpoints").mkdir(exist_ok=True)
-torch.save({"model": model.state_dict(), "cfg": cfg, "chars": chars}, here / "checkpoints/tiny_gpt.pt")
+torch.save({"model": model.state_dict(), "cfg": cfg, "vocab": vocab}, here / "checkpoints/tiny_gpt.pt")
 
 # start from id 0 (the newline char) and let the model write 500 chars
 ctx = torch.zeros(1, 1, dtype=torch.long, device=device)

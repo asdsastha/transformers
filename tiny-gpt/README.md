@@ -17,6 +17,17 @@ target  o  _  b  e  _  o  r  _      ← the same text shifted by one
 
 One window therefore gives 256 training examples at once. The catch: position 3 must not see position 4, or it would just copy the answer. That's what the **causal mask** prevents.
 
+```mermaid
+flowchart LR
+    A[Text window<br/>To be or...] --> B[Token IDs<br/>B, T]
+    B --> C[Token + position embeddings]
+    C --> D[Transformer blocks]
+    D --> E[Logits for next char]
+    E --> F[Softmax over 65 chars]
+    F --> G[Cross-entropy loss]
+    G --> H[Backprop + optimizer step]
+```
+
 Training lowers the **cross-entropy loss**, the average of −log p(correct next char):
 
 | Loss | Meaning |
@@ -28,20 +39,20 @@ Training lowers the **cross-entropy loss**, the average of −log p(correct next
 
 ## The architecture
 
-```
-"To be or"  ──► ids (B, T)
-                 │
-      token embedding (65 → 384) + position embedding (256 → 384)
-                 │                                               (B, T, 384)
-   ┌─────────────▼─────────────┐
-   │  Block  × 6               │
-   │   x = x + Attn(LN(x))     │  ← tokens look at earlier tokens (communication)
-   │   x = x + MLP(LN(x))      │  ← each token processes what it gathered (computation)
-   └─────────────┬─────────────┘
-                 │
-          LayerNorm → Linear (384 → 65)  ──► logits (B, T, 65)
-                 │
-       cross-entropy vs. next char  ──► loss
+```mermaid
+flowchart TD
+    IN[Input text window] --> IDS[Token IDs B,T]
+    IDS --> EMB[Token embedding 65 to 384]
+    IDS --> POS[Position embedding 256 to 384]
+    EMB --> SUM[Add token and position embeddings]
+    POS --> SUM
+    SUM --> SHAPE[Hidden state B,T,384]
+    SHAPE --> BLOCKS[Transformer blocks x6]
+    BLOCKS --> COMM[x equals x plus Attn LN x]
+    COMM --> COMP[x equals x plus MLP LN x]
+    COMP --> HEAD[LayerNorm then Linear 384 to 65]
+    HEAD --> LOGITS[Logits B,T,65]
+    LOGITS --> LOSS[Cross-entropy loss vs next char]
 ```
 
 - **Embeddings:** turn ids into vectors. Attention alone doesn't know token order, so a learned **position** vector is added. LLaMA replaces this with RoPE, which comes up later in this repo.
@@ -51,6 +62,19 @@ Training lowers the **cross-entropy loss**, the average of −log p(correct next
 - **MLP:** 384 → 1536 → 384 with GELU, applied to each token separately. It holds about two-thirds of the parameters.
 - **Residual + pre-norm:** each sublayer *adds* to a running vector (the residual stream), so gradients have a direct path through 6 layers.
 - **Dropout 0.2:** 1 MB of text is small for 10.8M parameters. Without dropout the model memorises it.
+
+```mermaid
+flowchart TD
+    X[Input state B,T,384] --> LN1[Layer norm]
+    LN1 --> QKV[QKV projections]
+    QKV --> ATTN[Causal self attention]
+    ATTN --> RES1[Residual add after attention]
+    RES1 --> LN2[Layer norm]
+    LN2 --> MLP[MLP 384 to 1536 to 384 with GELU]
+    MLP --> RES2[Residual add after MLP]
+    RES2 --> HEAD[Linear 384 to 65]
+    HEAD --> LOGITS[Logits for next characters]
+```
 
 ## Files
 
