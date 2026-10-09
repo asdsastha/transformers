@@ -1,0 +1,20 @@
+# Models: downloaded or converted, far too big for git (re-download with `hf download`)
+hf/
+
+# Compiled CUDA output: rebuild with nvcc
+cuda/**/*.so
+cuda/**/*.o
+cuda/**/*.out
+cuda/bin/
+
+# Local reference code: never commit
+vx/
+
+# Claude Code instructions for this machine: local only
+CLAUDE.md
+
+# Private notes: local only
+ref/private-notes.md
+
+# Papers: link to arXiv instead of committing copies
+ref/*.pdf
