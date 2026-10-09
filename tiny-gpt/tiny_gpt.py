@@ -39,7 +39,21 @@ class GPTWrapper:
         y = torch.stack([data[i+1:i+self.cfg.block_size+1] for i in ix])
         return x, y
 
-
+    @torch.no_grad()
+    def estimate_loss(self, n_batches=100):
+        """ Average the loss over 100 batches per split as single batch is too noisy to compare or estimate overall performance """
+        self.mode.eval()
+        model_out = {}
+        for split in ['train', 'val']:
+            losses = torch.zeros(n_batches)
+            for k in range(n_batches):
+                with torch.autocast(device, dtype=torch.bfloat16):
+                    _, loss = self.model(self.get_batch(split))
+                losses[k] = loss.item()
+            model_out[split] = losses.mean().item()
+        self.model.train()
+        return model_out
+    
     def print(self):
         print(f"Text length: {len(self.text)}")
         print(f"Vocab size: {self.vocab_size}")
@@ -58,6 +72,12 @@ class GPTWrapper:
         print(f"Config: {self.cfg}")
 
 
-gptW = GPTWrapper("data/input.txt")
-gptW.print()
 
+def main():
+    gptW = GPTWrapper("data/input.txt")
+    gptW.print()
+
+
+
+if __name__ == "__main__":
+    main()
